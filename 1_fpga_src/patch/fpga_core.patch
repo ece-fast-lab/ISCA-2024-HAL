@@ -1,0 +1,53 @@
+--- HAL-FPGA/fpga/mqnic/AU280/fpga_100g/rtl/fpga_core.v
++++ corundum/fpga/mqnic/AU280/fpga_100g/rtl/fpga_core.v
+@@ -492,7 +492,10 @@
+     input  wire [31:0]                        m_axil_cms_rdata,
+     input  wire [1:0]                         m_axil_cms_rresp,
+     input  wire                               m_axil_cms_rvalid,
+-    output wire                               m_axil_cms_rready
++    output wire                               m_axil_cms_rready,
++
++    output wire  [31:0] split_data_byte,
++    output wire  [31:0] split_cycle
+ );
+ 
+ parameter PORT_COUNT = IF_COUNT*PORTS_PER_IF;
+@@ -599,6 +602,13 @@
+ assign m_axil_cms_arvalid = m_axil_cms_arvalid_reg;
+ assign m_axil_cms_rready = 1'b1;
+ 
++
++reg [31:0] split_data_byte_reg = 32'd20000;
++reg [31:0] split_cycle_reg = 32'd32227;
++
++assign split_data_byte = split_data_byte_reg;
++assign split_cycle = split_cycle_reg;
++
+ always @(posedge clk_250mhz) begin
+     ctrl_reg_wr_ack_reg <= 1'b0;
+     ctrl_reg_rd_data_reg <= {AXIL_CTRL_DATA_WIDTH{1'b0}};
+@@ -617,6 +627,14 @@
+                 // FW ID: FPGA JTAG ID
+                 fpga_boot_reg <= ctrl_reg_wr_data == 32'hFEE1DEAD;
+             end
++            // split data byte
++            8'h10: begin
++                split_data_byte_reg <= ctrl_reg_wr_data;
++            end
++            // split data byte
++            8'h14: begin
++                split_cycle_reg <= ctrl_reg_wr_data;
++            end
+             // QSPI flash
+             RBB+8'h0C: begin
+                 // SPI flash ctrl: format
+@@ -702,6 +720,9 @@
+         m_axil_cms_awvalid_reg <= 1'b0;
+         m_axil_cms_wvalid_reg <= 1'b0;
+         m_axil_cms_arvalid_reg <= 1'b0;
++
++        split_data_byte_reg <= 32'd25000;
++        split_cycle_reg <= 32'd16113;
+     end
+ end
+ 

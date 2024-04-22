@@ -1,0 +1,20 @@
+--- HAL-FPGA/fpga/mqnic/AU280/fpga_100g/fpga/Makefile
++++ corundum/fpga/mqnic/AU280/fpga_100g/fpga/Makefile
+@@ -82,6 +82,8 @@
+ SYN_FILES += lib/axis/rtl/axis_fifo_adapter.v
+ SYN_FILES += lib/axis/rtl/axis_pipeline_fifo.v
+ SYN_FILES += lib/axis/rtl/axis_register.v
++SYN_FILES += lib/axis/rtl/director_axis_register.v
++SYN_FILES += lib/axis/rtl/feedback_axis_register.v
+ SYN_FILES += lib/axis/rtl/sync_reset.v
+ SYN_FILES += lib/pcie/rtl/pcie_axil_master.v
+ SYN_FILES += lib/pcie/rtl/pcie_tlp_demux.v
+@@ -132,6 +134,8 @@
+ IP_TCL_FILES += ip/cmac_usplus.tcl
+ IP_TCL_FILES += ip/cmac_gty.tcl
+ IP_TCL_FILES += ip/cms.tcl
++IP_TCL_FILES += ip/axis_data_fifo_async.tcl
++IP_TCL_FILES += ip/fifo_generator_async.tcl
+ #IP_TCL_FILES += ip/hbm_0.tcl
+ #IP_TCL_FILES += ip/ddr4_0.tcl
+ 

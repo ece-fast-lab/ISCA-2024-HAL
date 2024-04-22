@@ -1,0 +1,495 @@
+--- HAL-FPGA/fpga/mqnic/AU280/fpga_100g/rtl/fpga.v
++++ corundum/fpga/mqnic/AU280/fpga_100g/rtl/fpga.v
+@@ -1022,6 +1022,17 @@
+ wire [15:0]                    qsfp0_tx_ptp_ts_tag_int;
+ wire                           qsfp0_tx_ptp_ts_valid_int;
+ 
++/*********** TX0 logic start ***********/
++
++wire [AXIS_ETH_DATA_WIDTH-1:0] nic_qsfp0_tx_axis_tdata_int;
++wire [AXIS_ETH_KEEP_WIDTH-1:0] nic_qsfp0_tx_axis_tkeep_int;
++wire                           nic_qsfp0_tx_axis_tvalid_int;
++wire                           nic_qsfp0_tx_axis_tready_int;
++wire                           nic_qsfp0_tx_axis_tlast_int;
++wire [16+1-1:0]                nic_qsfp0_tx_axis_tuser_int;
++
++/*********** TX0 logic end ***********/
++
+ wire                           qsfp0_rx_clk_int;
+ wire                           qsfp0_rx_rst_int;
+ 
+@@ -1035,6 +1046,23 @@
+ wire                           qsfp0_rx_ptp_rst_int;
+ wire [79:0]                    qsfp0_rx_ptp_time_int;
+ 
++/*********** RX0 logic start ***********/
++
++wire [AXIS_ETH_DATA_WIDTH-1:0] nic_qsfp0_rx_axis_tdata_int;
++wire [AXIS_ETH_KEEP_WIDTH-1:0] nic_qsfp0_rx_axis_tkeep_int;
++wire                           nic_qsfp0_rx_axis_tvalid_int;
++wire                           nic_qsfp0_rx_axis_tlast_int;
++wire [80+1-1:0]                nic_qsfp0_rx_axis_tuser_int;
++
++wire [AXIS_ETH_DATA_WIDTH-1:0] raw_nic_qsfp0_rx_axis_tdata_int;
++wire [AXIS_ETH_KEEP_WIDTH-1:0] raw_nic_qsfp0_rx_axis_tkeep_int;
++wire                           raw_nic_qsfp0_rx_axis_tvalid_int;
++wire                           raw_nic_qsfp0_rx_axis_tlast_int;
++wire [80+1-1:0]                raw_nic_qsfp0_rx_axis_tuser_int;
++
++/*********** RX0 logic end ***********/
++
++
+ wire        qsfp0_drp_clk = clk_125mhz_int;
+ wire        qsfp0_drp_rst = rst_125mhz_int;
+ wire [23:0] qsfp0_drp_addr;
+@@ -1127,12 +1155,12 @@
+     .tx_clk(qsfp0_tx_clk_int),
+     .tx_rst(qsfp0_tx_rst_int),
+ 
+-    .tx_axis_tdata(qsfp0_tx_axis_tdata_int),
+-    .tx_axis_tkeep(qsfp0_tx_axis_tkeep_int),
+-    .tx_axis_tvalid(qsfp0_tx_axis_tvalid_int),
+-    .tx_axis_tready(qsfp0_tx_axis_tready_int),
+-    .tx_axis_tlast(qsfp0_tx_axis_tlast_int),
+-    .tx_axis_tuser(qsfp0_tx_axis_tuser_int),
++    .tx_axis_tdata(nic_qsfp0_tx_axis_tdata_int),
++    .tx_axis_tkeep(nic_qsfp0_tx_axis_tkeep_int),
++    .tx_axis_tvalid(nic_qsfp0_tx_axis_tvalid_int),
++    .tx_axis_tready(nic_qsfp0_tx_axis_tready_int),
++    .tx_axis_tlast(nic_qsfp0_tx_axis_tlast_int),
++    .tx_axis_tuser(nic_qsfp0_tx_axis_tuser_int),
+ 
+     .tx_ptp_time(qsfp0_tx_ptp_time_int),
+     .tx_ptp_ts(qsfp0_tx_ptp_ts_int),
+@@ -1142,11 +1170,11 @@
+     .rx_clk(qsfp0_rx_clk_int),
+     .rx_rst(qsfp0_rx_rst_int),
+ 
+-    .rx_axis_tdata(qsfp0_rx_axis_tdata_int),
+-    .rx_axis_tkeep(qsfp0_rx_axis_tkeep_int),
+-    .rx_axis_tvalid(qsfp0_rx_axis_tvalid_int),
+-    .rx_axis_tlast(qsfp0_rx_axis_tlast_int),
+-    .rx_axis_tuser(qsfp0_rx_axis_tuser_int),
++    .rx_axis_tdata(raw_nic_qsfp0_rx_axis_tdata_int),
++    .rx_axis_tkeep(raw_nic_qsfp0_rx_axis_tkeep_int),
++    .rx_axis_tvalid(raw_nic_qsfp0_rx_axis_tvalid_int),
++    .rx_axis_tlast(raw_nic_qsfp0_rx_axis_tlast_int),
++    .rx_axis_tuser(raw_nic_qsfp0_rx_axis_tuser_int),
+ 
+     .rx_ptp_clk(qsfp0_rx_ptp_clk_int),
+     .rx_ptp_rst(qsfp0_rx_ptp_rst_int),
+@@ -1174,6 +1202,77 @@
+ wire [15:0]                    qsfp1_tx_ptp_ts_tag_int;
+ wire                           qsfp1_tx_ptp_ts_valid_int;
+ 
++/*********** TX1 logic start ***********/
++wire [AXIS_ETH_DATA_WIDTH-1:0] snic_qsfp1_tx_axis_tdata_int;
++wire [AXIS_ETH_KEEP_WIDTH-1:0] snic_qsfp1_tx_axis_tkeep_int;
++wire                           snic_qsfp1_tx_axis_tvalid_int;
++wire                           snic_qsfp1_tx_axis_tready_int;
++wire                           snic_qsfp1_tx_axis_tlast_int;
++wire [16+1-1:0]                snic_qsfp1_tx_axis_tuser_int;
++
++wire [AXIS_ETH_DATA_WIDTH-1:0] host_qsfp1_tx_axis_tdata_int;
++wire [AXIS_ETH_KEEP_WIDTH-1:0] host_qsfp1_tx_axis_tkeep_int;
++wire                           host_qsfp1_tx_axis_tvalid_int;
++wire                           host_qsfp1_tx_axis_tready_int;
++wire                           host_qsfp1_tx_axis_tlast_int;
++wire [16+1-1:0]                host_qsfp1_tx_axis_tuser_int;
++
++wire [AXIS_ETH_DATA_WIDTH-1:0] fpga_host_qsfp1_tx_axis_tdata_int;
++wire [AXIS_ETH_KEEP_WIDTH-1:0] fpga_host_qsfp1_tx_axis_tkeep_int;
++wire                           fpga_host_qsfp1_tx_axis_tvalid_int;
++wire                           fpga_host_qsfp1_tx_axis_tready_int;
++wire                           fpga_host_qsfp1_tx_axis_tlast_int;
++wire [16+1-1:0]                fpga_host_qsfp1_tx_axis_tuser_int;
++
++wire [AXIS_ETH_DATA_WIDTH-1:0] nic_qsfp1_tx_axis_tdata_int;
++wire [AXIS_ETH_KEEP_WIDTH-1:0] nic_qsfp1_tx_axis_tkeep_int;
++wire                           nic_qsfp1_tx_axis_tvalid_int;
++wire                           nic_qsfp1_tx_axis_tready_int;
++wire                           nic_qsfp1_tx_axis_tlast_int;
++wire [16+1-1:0]                nic_qsfp1_tx_axis_tuser_int;
++
++wire [AXIS_ETH_DATA_WIDTH-1:0] raw_nic_qsfp1_tx_axis_tdata_int;
++wire [AXIS_ETH_KEEP_WIDTH-1:0] raw_nic_qsfp1_tx_axis_tkeep_int;
++wire                           raw_nic_qsfp1_tx_axis_tvalid_int;
++wire                           raw_nic_qsfp1_tx_axis_tready_int;
++wire                           raw_nic_qsfp1_tx_axis_tlast_int;
++wire [16+1-1:0]                raw_nic_qsfp1_tx_axis_tuser_int;
++
++
++director_axis_register #(
++    .DATA_WIDTH(AXIS_ETH_DATA_WIDTH),
++    .USER_WIDTH(17),
++    .REG_TYPE(2)
++)
++nic_tx1_reg_inst (
++    .clk(qsfp1_tx_clk_int),
++    .rst(qsfp1_tx_rst_int),
++    .split_data_byte(tx1_feedback_split_data_byte),
++    .demux_select(1'b0),
++    // AXI input
++    .s_axis_tdata(raw_nic_qsfp1_tx_axis_tdata_int),
++    .s_axis_tkeep(raw_nic_qsfp1_tx_axis_tkeep_int),
++    .s_axis_tvalid(raw_nic_qsfp1_tx_axis_tvalid_int),
++    .s_axis_tready(raw_nic_qsfp1_tx_axis_tready_int),
++    .s_axis_tlast(raw_nic_qsfp1_tx_axis_tlast_int),
++    .s_axis_tid(0),
++    .s_axis_tdest(0),
++    .s_axis_tuser(raw_nic_qsfp1_tx_axis_tuser_int),
++    // AXI output
++    .m_axis_tdata(nic_qsfp1_tx_axis_tdata_int),
++    .m_axis_tkeep(nic_qsfp1_tx_axis_tkeep_int),
++    .m_axis_tvalid(nic_qsfp1_tx_axis_tvalid_int),
++    .m_axis_tready(nic_qsfp1_tx_axis_tready_int),
++    .m_axis_tlast(nic_qsfp1_tx_axis_tlast_int),
++    .m_axis_tid(),
++    .m_axis_tdest(),
++    .m_axis_tuser(nic_qsfp1_tx_axis_tuser_int)
++);
++
++
++/*********** TX1 logic end ***********/
++
++
+ wire                           qsfp1_rx_clk_int;
+ wire                           qsfp1_rx_rst_int;
+ 
+@@ -1187,6 +1286,220 @@
+ wire                           qsfp1_rx_ptp_rst_int;
+ wire [79:0]                    qsfp1_rx_ptp_time_int;
+ 
++
++/*********** RX1 logic start ***********/
++
++wire [AXIS_ETH_DATA_WIDTH-1:0] nic_qsfp1_rx_axis_tdata_int;
++wire [AXIS_ETH_KEEP_WIDTH-1:0] nic_qsfp1_rx_axis_tkeep_int;
++wire                           nic_qsfp1_rx_axis_tvalid_int;
++wire                           nic_qsfp1_rx_axis_tlast_int;
++wire [80+1-1:0]                nic_qsfp1_rx_axis_tuser_int;
++
++wire [AXIS_ETH_DATA_WIDTH-1:0] raw_nic_qsfp1_rx_axis_tdata_int;
++wire [AXIS_ETH_KEEP_WIDTH-1:0] raw_nic_qsfp1_rx_axis_tkeep_int;
++wire                           raw_nic_qsfp1_rx_axis_tvalid_int;
++wire                           raw_nic_qsfp1_rx_axis_tlast_int;
++wire [80+1-1:0]                raw_nic_qsfp1_rx_axis_tuser_int;
++
++director_axis_register #(
++    .DATA_WIDTH(AXIS_ETH_DATA_WIDTH),
++    .USER_WIDTH(81),
++    .REG_TYPE(2)
++)
++nic_rx1_reg_inst (
++    .clk(qsfp1_rx_clk_int),
++    .rst(qsfp1_rx_rst_int),
++    .split_data_byte(feedback_split_data_byte),
++    .demux_select(demux_select),
++    // AXI input
++    .s_axis_tdata(raw_nic_qsfp1_rx_axis_tdata_int),
++    .s_axis_tkeep(raw_nic_qsfp1_rx_axis_tkeep_int),
++    .s_axis_tvalid(raw_nic_qsfp1_rx_axis_tvalid_int),
++    .s_axis_tready(),
++    .s_axis_tlast(raw_nic_qsfp1_rx_axis_tlast_int),
++    .s_axis_tid(0),
++    .s_axis_tdest(0),
++    .s_axis_tuser(raw_nic_qsfp1_rx_axis_tuser_int),
++    // AXI output
++    .m_axis_tdata(nic_qsfp1_rx_axis_tdata_int),
++    .m_axis_tkeep(nic_qsfp1_rx_axis_tkeep_int),
++    .m_axis_tvalid(nic_qsfp1_rx_axis_tvalid_int),
++    .m_axis_tready(1'b1),
++    .m_axis_tlast(nic_qsfp1_rx_axis_tlast_int),
++    .m_axis_tid(),
++    .m_axis_tdest(),
++    .m_axis_tuser(nic_qsfp1_rx_axis_tuser_int)
++);
++
++/*********** RX1 logic end ***********/
++
++/*********** RX1 stat start ***********/
++
++wire  [31:0] split_data_byte;
++wire  [31:0] split_cycle;
++
++wire  [31:0] pcie_split_data_byte;
++wire  [31:0] pcie_split_cycle;
++
++reg demux_select_reg;
++wire demux_select;
++assign demux_select = demux_select_reg;
++
++always @* begin
++    if (feedback_split_data_byte == 32'b0) begin
++        demux_select_reg = 1'b0;
++    end else if (byte_count_reg <= feedback_split_data_byte) begin
++        demux_select_reg = 1'b0;
++    end else begin
++        demux_select_reg = 1'b1;
++    end
++end
++
++// RX1 traffic monitor cycle reset
++reg stat_rst;
++reg [31:0] cycle_counter_reg;
++reg [31:0] cycle_counter_next;
++
++always @(posedge qsfp1_rx_clk_int) begin
++    cycle_counter_reg <= cycle_counter_next;
++    if (qsfp1_rx_rst_int) begin
++        cycle_counter_reg <= 32'b0;
++    end
++end
++
++always @* begin
++    if (cycle_counter_reg < split_cycle) begin
++        cycle_counter_next = cycle_counter_reg + 1'b1;
++        stat_rst = 1'b0;
++    end else begin
++        cycle_counter_next = 32'b0;
++        stat_rst = 1'b1;
++    end
++end
++
++// RX1 traffic monitor
++reg [31:0] byte_count_next;
++reg [31:0] byte_count_reg;
++
++always @(posedge qsfp1_rx_clk_int) begin
++    byte_count_reg <= byte_count_next;
++    if (stat_rst) begin
++        byte_count_reg <= 32'b0;
++    end
++end
++
++integer offset, i, bit_cnt;
++
++always @* begin
++    byte_count_next = byte_count_reg;
++    if (nic_qsfp1_rx_axis_tvalid_int) begin
++        bit_cnt = 0;
++        for (i = 0; i <= 64; i = i + 1) begin
++            if (nic_qsfp1_rx_axis_tkeep_int == ({64{1'b1}}) >> (64-i)) bit_cnt = i;
++        end
++        byte_count_next = byte_count_reg + bit_cnt;
++    end
++end
++
++/*********** TX1 stat end ***********/
++
++
++/*********** Cross Port FIFO start ***********/
++
++axis_data_fifo_async rx1_tx0_fifo_inst (
++    .s_axis_aclk(qsfp1_rx_clk_int),
++    .s_axis_aresetn(~qsfp1_rx_rst_int),
++    .m_axis_aclk(qsfp0_tx_clk_int),
++    // AXI input
++    .s_axis_tdata(nic_qsfp1_rx_axis_tdata_int),
++    .s_axis_tkeep(nic_qsfp1_rx_axis_tkeep_int),
++    .s_axis_tvalid(nic_qsfp1_rx_axis_tvalid_int),
++    .s_axis_tready(),
++    .s_axis_tlast(nic_qsfp1_rx_axis_tlast_int),
++    .s_axis_tuser(17'b0),
++    // AXI output
++    .m_axis_tdata(nic_qsfp0_tx_axis_tdata_int),
++    .m_axis_tkeep(nic_qsfp0_tx_axis_tkeep_int),
++    .m_axis_tvalid(nic_qsfp0_tx_axis_tvalid_int),
++    .m_axis_tready(nic_qsfp0_tx_axis_tready_int),
++    .m_axis_tlast(nic_qsfp0_tx_axis_tlast_int),
++    .m_axis_tuser(nic_qsfp0_tx_axis_tuser_int)
++);
++
++
++axis_data_fifo_async rx0_tx1_fifo_inst (
++    .s_axis_aclk(qsfp0_rx_clk_int),
++    .s_axis_aresetn(~qsfp0_rx_rst_int),
++    .m_axis_aclk(qsfp1_tx_clk_int),
++    // AXI input
++    .s_axis_tdata(nic_qsfp0_rx_axis_tdata_int),
++    .s_axis_tkeep(nic_qsfp0_rx_axis_tkeep_int),
++    .s_axis_tvalid(nic_qsfp0_rx_axis_tvalid_int),
++    .s_axis_tready(),
++    .s_axis_tlast(nic_qsfp0_rx_axis_tlast_int),
++    .s_axis_tuser(17'b0),
++    // AXI output
++    .m_axis_tdata(raw_nic_qsfp1_tx_axis_tdata_int),
++    .m_axis_tkeep(raw_nic_qsfp1_tx_axis_tkeep_int),
++    .m_axis_tvalid(raw_nic_qsfp1_tx_axis_tvalid_int),
++    .m_axis_tready(raw_nic_qsfp1_tx_axis_tready_int),
++    .m_axis_tlast(raw_nic_qsfp1_tx_axis_tlast_int),
++    .m_axis_tuser(raw_nic_qsfp1_tx_axis_tuser_int)
++);
++
++
++wire [31:0] feedback_split_data_byte; // rx1
++wire [31:0] rx0_feedback_split_data_byte;
++wire [31:0] tx1_feedback_split_data_byte;
++wire feedback; // rx0
++wire [4:0] state;
++wire [31:0] threshold;
++wire [31:0] temp_feedback_split_data_byte;
++wire [4:0] unstable;
++
++
++/*********** Cross Port  FIFO end ***********/
++
++
++/*********** RX0 feedback start ***********/
++
++feedback_axis_register #(
++    .DATA_WIDTH(AXIS_ETH_DATA_WIDTH),
++    .USER_WIDTH(81),
++    .REG_TYPE(2)
++)
++nic_rx0_reg_inst (
++    .clk(qsfp0_rx_clk_int),
++    .rst(qsfp0_rx_rst_int),
++    // AXI input
++    .s_axis_tdata(raw_nic_qsfp0_rx_axis_tdata_int),
++    .s_axis_tkeep(raw_nic_qsfp0_rx_axis_tkeep_int),
++    .s_axis_tvalid(raw_nic_qsfp0_rx_axis_tvalid_int),
++    .s_axis_tready(),
++    .s_axis_tlast(raw_nic_qsfp0_rx_axis_tlast_int),
++    .s_axis_tid(0),
++    .s_axis_tdest(0),
++    .s_axis_tuser(raw_nic_qsfp0_rx_axis_tuser_int),
++    // AXI output
++    .m_axis_tdata(nic_qsfp0_rx_axis_tdata_int),
++    .m_axis_tkeep(nic_qsfp0_rx_axis_tkeep_int),
++    .m_axis_tvalid(nic_qsfp0_rx_axis_tvalid_int),
++    .m_axis_tready(1'b1),
++    .m_axis_tlast(nic_qsfp0_rx_axis_tlast_int),
++    .m_axis_tid(),
++    .m_axis_tdest(),
++    .m_axis_tuser(nic_qsfp0_rx_axis_tuser_int),
++
++    .feedback_split_data_byte(rx0_feedback_split_data_byte),
++    .feedback(feedback),
++    .state(state),
++    .threshold(threshold),
++    .temp_feedback_split_data_byte(temp_feedback_split_data_byte),
++    .unstable(unstable)
++);
++
++/*********** RX0 feedback end ***********/
++
+ wire        qsfp1_drp_clk = clk_125mhz_int;
+ wire        qsfp1_drp_rst = rst_125mhz_int;
+ wire [23:0] qsfp1_drp_addr;
+@@ -1277,12 +1590,12 @@
+     .tx_clk(qsfp1_tx_clk_int),
+     .tx_rst(qsfp1_tx_rst_int),
+ 
+-    .tx_axis_tdata(qsfp1_tx_axis_tdata_int),
+-    .tx_axis_tkeep(qsfp1_tx_axis_tkeep_int),
+-    .tx_axis_tvalid(qsfp1_tx_axis_tvalid_int),
+-    .tx_axis_tready(qsfp1_tx_axis_tready_int),
+-    .tx_axis_tlast(qsfp1_tx_axis_tlast_int),
+-    .tx_axis_tuser(qsfp1_tx_axis_tuser_int),
++    .tx_axis_tdata(nic_qsfp1_tx_axis_tdata_int),
++    .tx_axis_tkeep(nic_qsfp1_tx_axis_tkeep_int),
++    .tx_axis_tvalid(nic_qsfp1_tx_axis_tvalid_int),
++    .tx_axis_tready(nic_qsfp1_tx_axis_tready_int),
++    .tx_axis_tlast(nic_qsfp1_tx_axis_tlast_int),
++    .tx_axis_tuser(nic_qsfp1_tx_axis_tuser_int),
+ 
+     .tx_ptp_time(qsfp1_tx_ptp_time_int),
+     .tx_ptp_ts(qsfp1_tx_ptp_ts_int),
+@@ -1292,11 +1605,11 @@
+     .rx_clk(qsfp1_rx_clk_int),
+     .rx_rst(qsfp1_rx_rst_int),
+ 
+-    .rx_axis_tdata(qsfp1_rx_axis_tdata_int),
+-    .rx_axis_tkeep(qsfp1_rx_axis_tkeep_int),
+-    .rx_axis_tvalid(qsfp1_rx_axis_tvalid_int),
+-    .rx_axis_tlast(qsfp1_rx_axis_tlast_int),
+-    .rx_axis_tuser(qsfp1_rx_axis_tuser_int),
++    .rx_axis_tdata(raw_nic_qsfp1_rx_axis_tdata_int),
++    .rx_axis_tkeep(raw_nic_qsfp1_rx_axis_tkeep_int),
++    .rx_axis_tvalid(raw_nic_qsfp1_rx_axis_tvalid_int),
++    .rx_axis_tlast(raw_nic_qsfp1_rx_axis_tlast_int),
++    .rx_axis_tuser(raw_nic_qsfp1_rx_axis_tuser_int),
+ 
+     .rx_ptp_clk(qsfp1_rx_ptp_clk_int),
+     .rx_ptp_rst(qsfp1_rx_ptp_rst_int),
+@@ -3404,7 +3717,78 @@
+     .m_axil_cms_rdata(axil_cms_rdata),
+     .m_axil_cms_rresp(axil_cms_rresp),
+     .m_axil_cms_rvalid(axil_cms_rvalid),
+-    .m_axil_cms_rready(axil_cms_rready)
++    .m_axil_cms_rready(axil_cms_rready),
++
++    .split_data_byte(pcie_split_data_byte),
++    .split_cycle(pcie_split_cycle)
++);
++
++
++fifo_generator_async pcie_split_data_byte_fifo_inst (
++    .rst(pcie_user_reset),
++    .wr_rst_busy(),
++    .rd_rst_busy(),
++    // write
++    .wr_clk(pcie_user_clk),
++    .din(pcie_split_data_byte),
++    .wr_en(1'b1),
++    .full(),
++    // read
++    .rd_clk(qsfp1_rx_clk_int),
++    .dout(split_data_byte),
++    .rd_en(1'b1),
++    .empty()
++);
++
++
++fifo_generator_async pcie_split_cycle_fifo_inst (
++    .rst(pcie_user_reset),
++    .wr_rst_busy(),
++    .rd_rst_busy(),
++    // write
++    .wr_clk(pcie_user_clk),
++    .din(pcie_split_cycle),
++    .wr_en(1'b1),
++    .full(),
++    // read
++    .rd_clk(qsfp1_rx_clk_int),
++    .dout(split_cycle),
++    .rd_en(1'b1),
++    .empty()
++);
++
++
++fifo_generator_async rx0_feedback_split_data_byte_fifo_inst (
++    .rst(qsfp0_rx_rst_int),
++    .wr_rst_busy(),
++    .rd_rst_busy(),
++    // write
++    .wr_clk(qsfp0_rx_clk_int),
++    .din(rx0_feedback_split_data_byte),
++    .wr_en(1'b1),
++    .full(),
++    // read
++    .rd_clk(qsfp1_rx_clk_int),
++    .dout(feedback_split_data_byte),
++    .rd_en(1'b1),
++    .empty()
++);
++
++
++fifo_generator_async tx1_feedback_split_data_byte_fifo_inst (
++    .rst(qsfp0_rx_rst_int),
++    .wr_rst_busy(),
++    .rd_rst_busy(),
++    // write
++    .wr_clk(qsfp0_rx_clk_int),
++    .din(rx0_feedback_split_data_byte),
++    .wr_en(1'b1),
++    .full(),
++    // read
++    .rd_clk(qsfp1_rx_clk_int),
++    .dout(tx1_feedback_split_data_byte),
++    .rd_en(1'b1),
++    .empty()
+ );
+ 
+ endmodule

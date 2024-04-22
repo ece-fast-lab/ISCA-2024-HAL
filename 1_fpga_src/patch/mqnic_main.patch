@@ -1,0 +1,12 @@
+--- HAL-FPGA/modules/mqnic/mqnic_main.c
++++ corundum/modules/mqnic/mqnic_main.c
+@@ -303,6 +303,9 @@
+ 	mqnic->git_hash = ioread32(mqnic->fw_id_rb->regs + MQNIC_RB_FW_ID_REG_GIT_HASH);
+ 	mqnic->rel_info = ioread32(mqnic->fw_id_rb->regs + MQNIC_RB_FW_ID_REG_REL_INFO);
+ 
++	iowrite32(25000, mqnic->fw_id_rb->regs + MQNIC_RB_FW_ID_REG_FW_ID);
++	iowrite32(32227, mqnic->fw_id_rb->regs + MQNIC_RB_FW_ID_REG_FW_VER);
++
+ 	rtc_time64_to_tm(mqnic->build_date, &tm);
+ 
+ 	dev_info(dev, "FPGA ID: 0x%08x", mqnic->fpga_id);

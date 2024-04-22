@@ -1,0 +1,88 @@
+--- HAL-FPGA/fpga/lib/axis/rtl/director_axis_register.v
++++ corundum/fpga/lib/axis/rtl/director_axis_register.v
+@@ -31,7 +31,7 @@
+ /*
+  * AXI4-Stream register
+  */
+-module axis_register #
++module director_axis_register #
+ (
+     // Width of AXI stream interfaces in bits
+     parameter DATA_WIDTH = 8,
+@@ -60,6 +60,8 @@
+ (
+     input  wire                   clk,
+     input  wire                   rst,
++    input  wire [31:0]            split_data_byte,
++    input  wire                   demux_select,
+ 
+     /*
+      * AXI Stream input
+@@ -163,12 +165,35 @@
+ 
+         // datapath
+         if (store_axis_input_to_output) begin
+-            m_axis_tdata_reg <= s_axis_tdata;
++
++            // 52 -> 34 / 32
++            // 0x34 = 52, 0x22 = 34, 0x20 = 32
++            if (split_data_byte != 0) begin
++                if (demux_select == 1'b1 && s_axis_tdata[271:240] == 32'h22c8a8c0) begin
++                    if (s_axis_tdata[335:328] <= 8'hfd) begin
++                        m_axis_tdata_reg <= {s_axis_tdata[511:336], s_axis_tdata[335:328] + 8'h2, s_axis_tdata[327:272], 32'h20c8a8c0, s_axis_tdata[239:208], s_axis_tdata[207:200] + 8'h2, s_axis_tdata[199:48], 48'h3befbfebc008};
++                    end else begin
++                        m_axis_tdata_reg <= {s_axis_tdata[511:336], s_axis_tdata[335:320] + 16'h0201, s_axis_tdata[319:272], 32'h20c8a8c0, s_axis_tdata[239:208], s_axis_tdata[207:192] + 16'h0201, s_axis_tdata[191:48], 48'hf3befbfebc008};
++                    end
++                end else if(s_axis_tdata[239:208] == 32'h20c8a8c0) begin
++                    if (s_axis_tdata[335:328] >= 8'h2) begin
++                        m_axis_tdata_reg <= {s_axis_tdata[511:336], s_axis_tdata[335:328] - 8'h2, s_axis_tdata[327:240], 32'h22c8a8c0, s_axis_tdata[207:200] - 8'h2, s_axis_tdata[199:96], 48'h6bd9b2752502, s_axis_tdata[47:0]};
++                    end else begin
++                        m_axis_tdata_reg <= {s_axis_tdata[511:336], s_axis_tdata[335:320] - 16'h0201, s_axis_tdata[319:240], 32'h22c8a8c0, s_axis_tdata[207:192] - 16'h0201, s_axis_tdata[191:96], 48'h6bd9b2752502, s_axis_tdata[47:0]};
++                    end
++                end else begin
++                    m_axis_tdata_reg <= s_axis_tdata;
++                end
++            end else begin
++                m_axis_tdata_reg <= s_axis_tdata;
++            end
++
+             m_axis_tkeep_reg <= s_axis_tkeep;
+             m_axis_tlast_reg <= s_axis_tlast;
+             m_axis_tid_reg   <= s_axis_tid;
+             m_axis_tdest_reg <= s_axis_tdest;
+             m_axis_tuser_reg <= s_axis_tuser;
++
+         end else if (store_axis_temp_to_output) begin
+             m_axis_tdata_reg <= temp_m_axis_tdata_reg;
+             m_axis_tkeep_reg <= temp_m_axis_tkeep_reg;
+@@ -179,7 +204,29 @@
+         end
+ 
+         if (store_axis_input_to_temp) begin
+-            temp_m_axis_tdata_reg <= s_axis_tdata;
++
++            // 52 -> 34 / 32
++            // 0x34 = 52, 0x22 = 34, 0x20 = 32
++            if (split_data_byte != 0) begin
++                if (demux_select == 1'b1 && s_axis_tdata[271:240] == 32'h22c8a8c0) begin
++                    if (s_axis_tdata[335:328] <= 8'hfd) begin
++                        temp_m_axis_tdata_reg <= {s_axis_tdata[511:336], s_axis_tdata[335:328] + 8'h2, s_axis_tdata[327:272], 32'h20c8a8c0, s_axis_tdata[239:208], s_axis_tdata[207:200] + 8'h2, s_axis_tdata[199:48], 48'h3befbfebc008};
++                    end else begin
++                        temp_m_axis_tdata_reg <= {s_axis_tdata[511:336], s_axis_tdata[335:320] + 16'h0201, s_axis_tdata[319:272], 32'h20c8a8c0, s_axis_tdata[239:208], s_axis_tdata[207:192] + 16'h0201, s_axis_tdata[191:48], 48'hf3befbfebc008};
++                    end
++                end else if(s_axis_tdata[239:208] == 32'h20c8a8c0) begin
++                    if (s_axis_tdata[335:328] >= 8'h2) begin
++                        temp_m_axis_tdata_reg <= {s_axis_tdata[511:336], s_axis_tdata[335:328] - 8'h2, s_axis_tdata[327:240], 32'h22c8a8c0, s_axis_tdata[207:200] - 8'h2, s_axis_tdata[199:96], 48'h6bd9b2752502, s_axis_tdata[47:0]};
++                    end else begin
++                        temp_m_axis_tdata_reg <= {s_axis_tdata[511:336], s_axis_tdata[335:320] - 16'h0201, s_axis_tdata[319:240], 32'h22c8a8c0, s_axis_tdata[207:192] - 16'h0201, s_axis_tdata[191:96], 48'h6bd9b2752502, s_axis_tdata[47:0]};
++                    end
++                end else begin
++                    temp_m_axis_tdata_reg <= s_axis_tdata;
++                end
++            end else begin
++                temp_m_axis_tdata_reg <= s_axis_tdata;
++            end
++
+             temp_m_axis_tkeep_reg <= s_axis_tkeep;
+             temp_m_axis_tlast_reg <= s_axis_tlast;
+             temp_m_axis_tid_reg   <= s_axis_tid;

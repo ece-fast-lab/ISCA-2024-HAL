@@ -1,0 +1,206 @@
+--- HAL-FPGA/fpga/lib/axis/rtl/feedback_axis_register.v
++++ corundum/fpga/lib/axis/rtl/feedback_axis_register.v
+@@ -31,7 +31,7 @@
+ /*
+  * AXI4-Stream register
+  */
+-module axis_register #
++module feedback_axis_register #
+ (
+     // Width of AXI stream interfaces in bits
+     parameter DATA_WIDTH = 8,
+@@ -83,7 +83,14 @@
+     output wire                   m_axis_tlast,
+     output wire [ID_WIDTH-1:0]    m_axis_tid,
+     output wire [DEST_WIDTH-1:0]  m_axis_tdest,
+-    output wire [USER_WIDTH-1:0]  m_axis_tuser
++    output wire [USER_WIDTH-1:0]  m_axis_tuser,
++
++    output wire [31:0] feedback_split_data_byte,
++    output wire feedback,
++    output wire [4:0] state,
++    output wire [31:0] threshold,
++    output wire [31:0] temp_feedback_split_data_byte,
++    output wire [4:0] unstable
+ );
+ 
+ generate
+@@ -128,6 +135,118 @@
+     // enable ready input next cycle if output is ready or the temp reg will not be filled on the next cycle (output reg empty or no input)
+     wire s_axis_tready_early = m_axis_tready || (!temp_m_axis_tvalid_reg && (!m_axis_tvalid_reg || !s_axis_tvalid));
+ 
++
++
++    // feedback reg 
++    reg [31:0] feedback_split_data_byte_reg = 32'd1, feedback_split_data_byte_next;
++    reg [31:0] temp_feedback_split_data_byte_reg = 32'd0, temp_feedback_split_data_byte_next;
++    reg feedback_reg = 1'b0, feedback_reg_buf = 1'b0;
++    reg debug_feedback_reg = 1'b0;
++
++    assign feedback_split_data_byte = feedback_split_data_byte_reg;
++    assign feedback = feedback_reg;
++
++    // state register
++    localparam [4:0]
++        STATE_IDLE = 5'd0,
++        STATE_SLOW_START = 5'd1,
++        STATE_CONG_AVOID = 5'd2,
++        STATE_STABLE = 5'd3;
++
++    // feedback logic
++    reg [4:0] state_reg = STATE_IDLE, state_next;
++    reg [31:0] threshold_reg = 32'd100000, threshold_next;
++    reg [4:0] unstable_reg = 5'b0, unstable_next;
++    localparam [31:0] split_step = 32'd10;
++    localparam [31:0] sensitive_detect = 32'd10;
++    assign state = state_reg;
++    assign threshold = threshold_reg;
++    assign temp_feedback_split_data_byte = temp_feedback_split_data_byte_reg;
++    assign unstable = unstable_reg;
++    // assign temp_feedback_split_data_byte_reg = s_axis_tdata[399:368];
++
++
++    always @* begin
++        state_next = state_reg;
++        threshold_next = threshold_reg;
++        feedback_split_data_byte_next = feedback_split_data_byte_reg;
++        unstable_next = unstable_reg;
++
++        case (state_reg)
++            STATE_IDLE: begin
++                if (feedback) begin
++                    state_next = STATE_SLOW_START;
++                end
++            end
++
++            STATE_SLOW_START: begin
++                if (feedback) begin
++                    if (feedback_split_data_byte_reg > temp_feedback_split_data_byte_reg + sensitive_detect) begin
++                        state_next = STATE_SLOW_START;
++                        threshold_next = threshold_reg / 2;
++                        feedback_split_data_byte_next = 32'b1;
++                    end else if (feedback_split_data_byte_reg < threshold_reg) begin
++                        state_next = STATE_SLOW_START;
++                        feedback_split_data_byte_next = 2 * feedback_split_data_byte_reg;
++                    end else begin
++                        state_next = STATE_CONG_AVOID;
++                        feedback_split_data_byte_next = feedback_split_data_byte_reg + split_step;
++                    end
++                end
++            end
++
++            STATE_CONG_AVOID: begin
++                if (feedback) begin
++                    if (feedback_split_data_byte_reg > temp_feedback_split_data_byte_reg + sensitive_detect) begin
++                        state_next = STATE_STABLE;
++                        threshold_next = feedback_split_data_byte_reg / 2;
++                        feedback_split_data_byte_next = feedback_split_data_byte_reg - split_step;
++                    end else begin
++                        state_next = STATE_CONG_AVOID;
++                        feedback_split_data_byte_next = feedback_split_data_byte_reg + split_step;
++                    end
++                end
++            end
++
++            STATE_STABLE: begin
++                if (feedback) begin
++                    if (unstable_reg == 5'd30) begin
++                        state_next = STATE_SLOW_START;
++                        threshold_next = feedback_split_data_byte_reg / 2;
++                        feedback_split_data_byte_next = feedback_split_data_byte_reg / 2;
++                        unstable_next = 5'b0;
++                    end else if (feedback_split_data_byte_reg > temp_feedback_split_data_byte_reg + sensitive_detect) begin
++                        state_next = STATE_STABLE;
++                        feedback_split_data_byte_next = feedback_split_data_byte_reg - 32'd10;
++                        unstable_next = unstable_reg + 1'b1;
++                    end else begin
++                        state_next = STATE_STABLE;
++                        feedback_split_data_byte_next = feedback_split_data_byte_reg + 32'b1;
++                        unstable_next = 5'b0;
++                    end
++                end
++            end
++        endcase
++    end
++
++
++    always @(posedge clk) begin
++        state_reg <= state_next;
++        threshold_reg <= threshold_next;
++        feedback_split_data_byte_reg <= feedback_split_data_byte_next;
++        unstable_reg <= unstable_next;
++
++        if(rst) begin
++            state_reg <= STATE_IDLE;
++            threshold_reg <= 32'd100000;
++            feedback_split_data_byte_reg <= 32'b1;
++            unstable_reg <= 5'b0;
++        end else if (debug_feedback_reg) begin
++            feedback_split_data_byte_reg <= temp_feedback_split_data_byte_reg;
++        end
++    end
++
++
+     always @* begin
+         // transfer sink ready state to source
+         m_axis_tvalid_next = m_axis_tvalid_reg;
+@@ -137,6 +256,8 @@
+         store_axis_input_to_temp = 1'b0;
+         store_axis_temp_to_output = 1'b0;
+ 
++        temp_feedback_split_data_byte_next = temp_feedback_split_data_byte_reg;
++
+         if (s_axis_tready_reg) begin
+             // input is ready
+             if (m_axis_tready || !m_axis_tvalid_reg) begin
+@@ -160,9 +281,22 @@
+         s_axis_tready_reg <= s_axis_tready_early;
+         m_axis_tvalid_reg <= m_axis_tvalid_next;
+         temp_m_axis_tvalid_reg <= temp_m_axis_tvalid_next;
++        feedback_reg <= feedback_reg_buf;
++        temp_feedback_split_data_byte_reg <= temp_feedback_split_data_byte_next;
++        debug_feedback_reg <= 1'b0;
++        feedback_reg_buf <= 1'b0;
+ 
+         // datapath
+         if (store_axis_input_to_output) begin
++            if (s_axis_tdata[95:48] == 48'h6bd9b2752502 && s_axis_tdata[367:336] == 32'h66656564) begin
++                m_axis_tvalid_reg <= 1'b0;
++                feedback_reg_buf <= 1'b1;
++                temp_feedback_split_data_byte_reg <= s_axis_tdata[399:368];
++            end else if (s_axis_tdata[95:48] == 48'h6bd9b2752502 && s_axis_tdata[367:336] == 32'h66656565) begin
++                m_axis_tvalid_reg <= 1'b0;
++                debug_feedback_reg <= 1'b1;
++                temp_feedback_split_data_byte_reg <= s_axis_tdata[399:368];
++            end
+             m_axis_tdata_reg <= s_axis_tdata;
+             m_axis_tkeep_reg <= s_axis_tkeep;
+             m_axis_tlast_reg <= s_axis_tlast;
+@@ -170,6 +304,15 @@
+             m_axis_tdest_reg <= s_axis_tdest;
+             m_axis_tuser_reg <= s_axis_tuser;
+         end else if (store_axis_temp_to_output) begin
++            // if (temp_m_axis_tdata_reg[95:48] == 48'h6bd9b2752502 && temp_m_axis_tdata_reg[367:336] == 32'h66656564) begin
++            //     m_axis_tvalid_reg <= 1'b0;
++            //     feedback_reg <= 1'b1;
++            //     temp_feedback_split_data_byte_reg <= temp_m_axis_tdata_reg[399:368];
++            // end else if (temp_m_axis_tdata_reg[95:48] == 48'h6bd9b2752502 && temp_m_axis_tdata_reg[367:336] == 32'h66656565) begin
++            //     m_axis_tvalid_reg <= 1'b0;
++            //     debug_feedback_reg <= 1'b1;
++            //     temp_feedback_split_data_byte_reg <= temp_m_axis_tdata_reg[399:368];
++            // end
+             m_axis_tdata_reg <= temp_m_axis_tdata_reg;
+             m_axis_tkeep_reg <= temp_m_axis_tkeep_reg;
+             m_axis_tlast_reg <= temp_m_axis_tlast_reg;
+@@ -191,6 +334,11 @@
+             s_axis_tready_reg <= 1'b0;
+             m_axis_tvalid_reg <= 1'b0;
+             temp_m_axis_tvalid_reg <= 1'b0;
++
++            feedback_reg <= 1'b0;
++            temp_feedback_split_data_byte_reg <= 32'b0;
++            debug_feedback_reg <= 1'b0;
++            feedback_reg_buf <= 1'b0;
+         end
+     end
+ 
